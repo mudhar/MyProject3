@@ -1,0 +1,114 @@
+@import url("icon.css");
+body {
+	font-family: verdana,helvetica,arial,sans-serif;
+	font-size: 11px;
+	background-color: #282B34;
+}
+.clear {
+	clear: both;
+}
+a {
+	text-decoration: none;
+	color: #575765;
+}
+a:hover {
+	text-decoration: underline;
+}
+#header {
+	background-image:url(../../../images/header_bg.jpg);
+	background-repeat:repeat-x;
+	background-position:top left;
+	background-color: #006599;
+	padding:0px!important;
+	margin:0px!important;
+}
+#header img {	
+	padding: 0px auto;
+}
+.logo {
+	background-image:url(../../../images/header.jpg);
+	background-repeat:no-repeat;
+	background-position:top left;
+	height:83px;
+	width:100%;
+}
+.logo-info {
+	float: right;
+	padding-top: 3px;
+	padding-right: 5px;
+	color: #FFF;
+}
+.logo-info a {
+	color: #FFF;
+}
+.south {
+	background-color: #EFEFEF;
+}
+.footer {
+	padding-top: 3px;
+	padding-right: 5px;
+	float: right;
+	font-size: 10px;
+	font-weight: bold;
+}
+.footer:hover {
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+/*form area*/
+.form-area {
+	width: auto;
+	/*margin-top: -15px;*/
+    padding: 15px;
+}
+.toolbar-form {
+	padding-top: 5px;
+	padding-right: 5px;
+	padding-bottom: 5px;
+	margin-bottom: 10px;
+	border-bottom: 1px solid #ccc;
+}
+.control-group {
+	margin-bottom: 12px;
+}
+.control-label {
+	width: auto;
+	padding-right: 5px;
+	text-align: left;
+	float: left;
+    padding-top: 5px;
+}
+.control-label label {
+	display: block;
+	margin-bottom: 5px;
+}
+.controls {
+	margin-left: 180px;
+}
+.controls input[type="text"],.controls input[type="password"] {
+	height: 20px;
+    width: 300px;
+}
+.controls select {
+    width: 300px;
+}
+
+/*.form-area h1 {
+	border-bottom: 1px solid #ccc;
+	font-weight: normal;
+	text-transform: uppercase;
+}
+.form-area form {
+	width: auto;
+}
+.form-area form div {
+	margin-bottom: 20px;
+}
+.form-area form label {
+	padding-right: 10px;
+}
+.form-area form input[type="text"] {
+	height: 20px;
+    width: 280px;
+}*/

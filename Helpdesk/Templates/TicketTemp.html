@@ -1,0 +1,337 @@
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'Styles/themes/default/easyui.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'Styles/themes/icon.css' %}">
+<script type="text/javascript" src="{% static 'Scripts/jquery.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'Scripts/jquery.easyui.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'Scripts/jquery.cookie.js' %}"></script>
+<script type="text/javascript" src="{% static 'Scripts/datagrid-detailview.js' %}"></script>
+
+<table id="dg" title="Tickets" style="width: 1200px; height: auto; top: 100px;" rownumbers="true" fitColumns="true" singleSelect="true">
+</table>
+{% csrf_token %}
+<div id="toolbar">
+	<a href="#" class="easyui-linkbutton" iconCls="icon-add" plain="true" onclick="newTicket()">New Ticket</a> 
+	<a href="#" class="easyui-linkbutton" iconCls="icon-edit" plain="true" onclick="editTicket()">Edit Ticket</a> 
+	{% if user.get_position != "User" %} 
+		<a href="#" class="easyui-linkbutton" iconCls="icon-form" plain="true" onclick="assignTicket()">Assign To</a>
+	{% endif %}
+	{% if assignTo or status %}
+		<a href="#" class="easyui-linkbutton" iconCls="icon-basic" plain="true" onclick="responseTicket()">Response</a>
+	{% endif %} 
+	<a href="#" class="easyui-linkbutton" iconCls="icon-topic" plain="true" onclick="historyTicket()">History</a> 
+	<a href="#" class="easyui-linkbutton" iconCls="icon-search" plain="true" onclick="searchTicket()">Search Ticket</a>
+</div>
+
+<script type="text/javascript">
+	var csrftoken = $.cookie('csrftoken');
+	function csrfSafeMethod(method) {
+	    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+	}
+	$.ajaxSetup({
+		beforeSend: function(xhr, settings) {
+			if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+				xhr.setRequestHeader("X-CSRFToken", csrftoken);
+			}
+		}
+	});
+	var param = {};
+	if ('{{reportedBy}}' != ''){
+		param = {
+			statusBy : '{{reportedBy}}',
+			status : 'Open',
+			statusBefore : 'Open'
+		}
+	}
+	if ('{{solvedBy}}' != ''){
+		param = {
+			statusBy : '{{solvedBy}}',
+			status : 'Fixed',
+			statusBefore : 'Fixed'
+		}
+	}
+	if ('{{assignTo}}' != ''){
+		param = {
+			assignTo : '{{assignTo}}'
+		}
+	}
+	if ('{{status}}' != ''){
+		param = {
+			status : '{{status}}'
+		}
+	}
+	$('#dg').datagrid({
+		url : '{{ url }}',
+		queryParams: param,        
+		type : 'POST',
+		toolbar : '#toolbar',
+		pagination: true,
+		columns : [ [
+		{% for field in form %}              
+		{
+			{% for key, value in field_name.items %}
+				{% if key == field %}
+					field : '{{ field }}',
+					title : '{{ value }}',
+					hidden : (('{{ field }}' == 'ticketId') || ('{{ field }}' == 'problemDesc') || ('{{ field }}' == 'stepToReproduce') || ('{{ field }}' == 'solutionDesc') || ('{{ field }}' == 'attachment')) ? true : false,
+					width : 130,
+				{% endif %}	
+			{% endfor %}
+		},
+		{% endfor %}
+		] ],
+		view: detailview,
+		detailFormatter: function(rowIndex, rowData){
+			return 	'<table class="detail_grid">'+
+						'<tr><td style="width:100px;">Problem Desc</td> <td>: </td> <td>' + rowData.problemDesc + '</td></tr>' +
+						'<tr><td style="width:100px;">Step To Reproduce</td> <td>: </td> <td>' + rowData.stepToReproduce + '</td></tr>' +
+						'<tr><td style="width:100px;">Solution Desc</td> <td>: </td> <td>' + rowData.solutionDesc + '</td></tr>' +
+						'<tr><td style="width:100px;">Attachment</td> <td>: </td> <td> <a href="' + rowData.attachment + '" download>' +rowData.attachment.replace('Static/Upload/','')+'</a></td></tr>' +
+		 			'</table>';
+		 }
+	});
+</script>
+
+<style type="text/css">
+	label { display: block; text-align: left; line-height: 150%; font-size: .85em; }
+	.ftitle { font-size: 14px; font-weight: bold; padding: 5px 0; margin-bottom: 10px; border-bottom: 1px solid #ccc; }
+	.detail_grid tr { height: 18px; }
+	.detail_grid td { height: 18px; font-size: 12px; border:0; padding:0px !important; }
+</style>
+
+<div id="dlgSearch" class="easyui-dialog" style="width: auto; height: auto; padding: 10px 20px;" closed="true" buttons="#dlg-buttons">
+	<form id="fmSearch" method="post" novalidate>
+		<table>
+			{{ DialogSearch }}
+			<input type="hidden" name="statusBefore" id="statusBefore">
+		</table>
+	</form>
+</div>
+<div id="dlg-buttons">
+	<a href="javascript:void(0)" class="easyui-linkbutton c6" iconCls="icon-ok" onclick="getTicketList();closeSearchDialog();" style="width: 90px">Search</a>
+	<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-cancel" onclick="resetSearch();closeSearchDialog();" style="width: 90px">Reset</a>
+</div>
+
+<div id="dlgResponse" class="easyui-dialog" style="width: auto; height: auto; padding: 10px 20px;" closed="true" buttons="#dlg-buttons2">
+	<form id="fmResponse" method="post" enctype="multipart/form-data" novalidate>
+		<table>
+			{{ DialogResponse }}
+		</table>
+	</form>
+</div>
+<div id="dlg-buttons2">
+	<a href="javascript:void(0)" class="easyui-linkbutton c6" iconCls="icon-ok" onclick="saveResponse()" style="width: 90px">Save</a>
+	<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-cancel" onclick="javascript:$('#dlgResponse').dialog('close')" style="width: 90px">Cancel</a>
+</div>
+
+<div id="dlgTicketHistory" class="easyui-dialog" style="width: auto; height: auto; padding: 10px 20px;" closed="true">
+	<table id="dgHistory" title="Tickets" style="width: 950px; height: 400px; rownumbers="true" fitColumns="true" singleSelect="true">
+	</table>
+</div>
+
+<script type="text/javascript">
+	function myformatter(date){
+		var y = date.getFullYear();
+		var m = date.getMonth()+1;
+		var d = date.getDate();
+		return y+'-'+(m<10?('0'+m):m)+'-'+(d<10?('0'+d):d);
+	}
+	function myparser(s){
+		if (!s) return new Date();
+		var ss = s.split('-');
+		var y = parseInt(ss[0],10);
+		var m = parseInt(ss[1],10);
+		var d = parseInt(ss[2],10);
+		if (!isNaN(y) && !isNaN(m) && !isNaN(d)){
+			return new Date(y,m-1,d);
+		} else {
+			return new Date();
+		}
+	}
+
+	var url;
+	function newTicket(){
+		parent.addTab('New Ticket','icon-add','Ticket');
+	}
+	
+	function editTicket(){
+		var row = $('#dg').datagrid('getSelected');
+		if(row && row.reportedBy_id == '{{ user.name }}' ){
+			if (row && row.status=='Open'){
+				parent.addTab('Edit Ticket','icon-add','Ticket','?param='+row.ticketNo);
+			}
+			else
+			{
+				alert('Data has been Assigned.');
+			}	
+		}
+		else{
+			alert('You are not authorized to edit this data.');
+		}
+	}
+	
+	function assignTicket(){
+		var row = $('#dg').datagrid('getSelected');
+		if (row){
+			parent.addTab('Assign Ticket','icon-add','AssignTo','?param='+row.ticketNo);
+		}
+	}
+	
+	function responseTicket(){
+		var row = $('#dg').datagrid('getSelected');
+		if (row && (row.status != 'Closed' && row.status != 'Canceled')){
+			$('#dlgResponse').dialog('open').dialog('setTitle','Ticket Response '+ row.ticketNo);
+			$('#fmResponse').find('input[name="ticketNo"]').val(row.ticketNo);
+			$('#fmResponse').find('input[name="ticketNo"]').attr('readonly','readonly');
+			url = 'Response';
+		}
+		else{
+			alert('Can not response form Closed or Canceled Ticket.')
+		}
+	}
+	
+	function saveResponse(){
+		$('#fmResponse').form('submit',{
+			url: 'Response',
+			type : 'POST',
+			onSubmit: function(){
+				return $(this).form('validate');
+			},
+			queryParams: {
+				csrfmiddlewaretoken: '{{ csrf_token }}',
+	        },
+			success: function(data){
+				dataJson = jQuery.parseJSON(data);
+				if (dataJson.success == true){
+					$('#dlgResponse').dialog('close');
+					$('#dg').datagrid('reload');
+					
+				} else {
+					$.messager.show({
+						title: 'Error',
+						msg: dataJson.message
+					});
+				}
+			}
+		});
+	}
+	
+	function historyTicket(){
+		/*var row = $('#dg').datagrid('getSelected');
+		if (row){
+			$('#dlgTicketHistory').dialog('open').dialog('setTitle','Ticket History ' + row.ticketNo);
+			$('#dgHistory').datagrid({
+				url : 'LTHD',
+				queryParams: {
+					ticketId : row.ticketId
+				},  
+				type : 'POST',
+				pagination: true,
+				columns : [ [
+					{field:'status',title:'Status',width:100,align:'center',sortable:true},
+					{field:'historyDateTime',title:'Date',width:120,align:'center',sortable:true},
+					{field:'desc',title:'Description',width:700,align:'left',sortable:true}
+				] ]
+			});
+		}*/
+		var row = $('#dg').datagrid('getSelected');
+		if(row){
+			parent.addTab('Ticket History '+ row.ticketNo,'icon-topic','ListTicketHistory','?param='+row.ticketId);
+		}
+	}
+	
+	function searchTicket(){
+		$('#dlgSearch').dialog('open').dialog('setTitle','Search Ticket');
+		url = 'Ticket';
+	}
+
+	function resetSearch(){
+		$('#fmSearch').form('clear');
+		doDefaultSearch();
+		url = 'Ticket';
+	}
+	
+	function getTicketList(){	
+		$('#dg').datagrid('load',{
+			ticketNo: $('#fmSearch').find('input[name="ticketNo"]').val(),
+			statusBefore: $('#fmSearch').find('input[name="statusBefore"]').val(),
+			reportedDateTime: $('#fmSearch').find('input[name="reportedDateTime"]').val(),
+			priority: $('#fmSearch').find('select[name="priority"]').val(),
+			assignTo: $('#fmSearch').find('select[name="assignTo"]').val(),
+			problemType: $('#fmSearch').find('select[name="problemType"]').val(),
+			problemDesc: $('#fmSearch').find('input[name="problemDesc"]').val(),
+			stepToReproduce: $('#fmSearch').find('input[name="stepToReproduce"]').val(),
+			telephone: $('#fmSearch').find('input[name="telephone"]').val(),
+			email: $('#fmSearch').find('input[name="email"]').val(),
+			status: $('#fmSearch').find('select[name="status"]').val(),
+			statusBy: $('#fmSearch').find('select[name="statusBy"]').val(),
+			//reportedBy: $('#fmSearch').find('select[name="reportedBy"]').val()
+		});
+	}
+	
+	function closeSearchDialog(){
+		$('#dlgSearch').dialog('close');
+	}
+	
+	function defaultSearchForm(){
+		if(('{{reportedBy}}'!='') || ('{{status}}'!='') || ('{{solvedBy}}'!='')){
+			$('#fmSearch').find('select[name="status"]').attr('disabled','disabled')
+		}
+		else{
+			$('#fmSearch').find('select[name="status"]').removeAttr('disabled')	
+		}
+		
+		if(('{{reportedBy}}'!='') || ('{{solvedBy}}'!='')){
+			$('#fmSearch').find('select[name="statusBy"]').attr('disabled','disabled');
+		}
+		else{
+			$('#fmSearch').find('select[name="statusBy"]').removeAttr('disabled');
+		}
+		
+		$('#fmSearch').find('select[name="statusBy"]').attr('disabled','disabled');
+	}
+	
+	function defaultSearch(){
+		if('{{reportedBy}}'!=''){
+			$('#fmSearch').find('select[name="statusBy"]').val({{reportedBy}});
+			$('#fmSearch').find('select[name="status"]').val('Open');
+			$('#fmSearch').find('input[name="statusBefore"]').val('Open');
+		}
+		
+		if('{{assignTo}}'!=''){
+			$('#fmSearch').find('select[name="assignTo"]').val({{assignTo}});
+			$('#fmSearch').find('select[name="assignTo"]').attr('disabled','disabled')
+		}
+		else{
+			$('#fmSearch').find('select[name="assignTo"]').removeAttr('disabled')
+		}
+		
+		if('{{status}}'!=''){
+			$('#fmSearch').find('select[name="status"]').val('{{status}}');
+		}
+		
+		if('{{solvedBy}}'!=''){
+			$('#fmSearch').find('select[name="statusBy"]').val({{solvedBy}});
+			$('#fmSearch').find('select[name="status"]').val('Fixed');
+			$('#fmSearch').find('input[name="statusBefore"]').val('Fixed');
+		}
+		
+		defaultSearchForm();
+	}
+	
+	function doDefaultSearch(){
+		defaultSearch();
+		getTicketList();
+	}
+	//doDefaultSearch();
+	defaultSearch();
+	
+	function changeStatusBy(val){
+		if(val=='Open')
+			$('#fmSearch').find('select[name="statusBy"]').removeAttr('disabled','disabled');
+		else{
+			$('#fmSearch').find('select[name="statusBy"]').val('');
+			$('#fmSearch').find('select[name="statusBy"]').attr('disabled','disabled');
+		}
+	}
+	
+</script>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+{% load static %}
+<link rel="stylesheet" type="text/css"
+	href="{% static 'Styles/themes/default/easyui.css' %}">
+<link rel="stylesheet" type="text/css"
+	href="{% static 'Styles/themes/icon.css' %}">
+<script type="text/javascript"
+	src="{% static 'Scripts/jquery.min.js' %}"></script>
+<script type="text/javascript"
+	src="{% static 'Scripts/jquery.easyui.min.js' %}"></script>
+<script type="text/javascript">
+	$('#aa').accordion({
+		fit : true
+	});
+	function addTab(title, icon, url, data) {
+		if ($('#tt').tabs('exists', title)) {
+			$('#tt').tabs('select', title);
+		} else {
+			data!=null? url = url + '/' + data : '';
+			var content = '<iframe scrolling="auto" frameborder="0" src="'+url+'" style="width:100%;height:515px;"></iframe>';
+			$('#tt').tabs('add', {
+				title : title,
+				iconCls : icon,
+				content : content,
+				closable : true,
+				tools:[{
+                    iconCls:'icon-mini-refresh',
+                    handler:function(e){
+                    	refreshTab({tabTitle:title,url:url});  
+                    }
+                }]
+			});
+		}
+	}
+	
+	function openNewtab(url) {
+	    var win = window.open(url, '_blank');
+	    win.focus();
+	}
+	
+	function refreshTab(config){  
+	    var refresh_tab = config.tabTitle?$('#tt').tabs('getTab',config.tabTitle):$('#tt').tabs('getSelected');  
+	    if(refresh_tab && refresh_tab.find('iframe').length > 0){  
+	    	var refresh_iframe = refresh_tab.find('iframe')[0];  
+	    	var refresh_url = config.url?config.url:refresh_iframe.src; 
+	    	refresh_iframe.contentWindow.location.href=refresh_url;  
+	    }  
+	}  
+</script>
+<title>Help desk</title>
+</head>
+<body class="easyui-layout">
+	<div data-options="region:'north',split:true" style="height: 65px;">
+		<span style="float: left; font-size: 30px; margin: 10px;">
+			Aplikasi Helpdesk Sekolah Terbaik 
+		</span> 
+		<span
+			style="float: right; font-size: 20px; margin-right: 10px;">
+			Selamat Datang, {{user.get_full_name}} <br />
+			<div style="float: right; font-size: 20px; margin-right: -5px;">
+				<a href="#" class="easyui-linkbutton" plain="true" iconCls="icon-photo" onclick="addTab('Change Password','icon-photo','ChangePassword')">Change Password</a>
+				<a href="Logout" class="easyui-linkbutton" plain="true" iconCls="icon-no">Logout</a>
+			</div>
+		</span>
+	</div>
+
+	<div
+		data-options="region:'west',title:'My Menu',split:true"
+		style="width: 300px;">
+		<div id="aa" class="easyui-accordion">
+			<div title="Ticket" style="overflow: auto; padding: 5px;"
+				data-options="iconCls:'icon-list',selected:true">
+				<ul class="easyui-tree">
+					<div id="menu1" class="tree-node" style="padding: 5px;"
+						onclick="addTab('New Ticket','icon-add','Ticket')">
+						<span class="tree-icon tree-file icon-add"></span> <span
+							class="tree-title">New Ticket</span>
+					</div>
+					<div id="menu3" class="tree-node" style="padding: 5px;"
+						onclick="addTab('View All Ticket','icon-grid','ListTicket')">
+						<span class="tree-icon tree-file icon-grid"></span> <span
+							class="tree-title">View All Ticket</span>
+					</div>
+					<div id="menu2" class="tree-node" style="padding: 5px;"
+						onclick="addTab('My Ticket','icon-star','ListTicket', '?reportedBy={{ user.id }}')">
+						<span class="tree-icon tree-file icon-star"></span> <span
+							class="tree-title">My Ticket</span>
+					</div>
+					{% if user.get_position != "User" %}
+					<div id="menu3" class="tree-node" style="padding: 5px;"
+						onclick="addTab('My Assignment','icon-form','ListTicket', '?assignTo={{ user.id }}')">
+						<span class="tree-icon tree-file icon-form"></span> <span
+							class="tree-title">My Assignment</span>
+					</div>
+					<div id="menu4" class="tree-node" style="padding: 5px;"
+						onclick="addTab('My Resolution','icon-tip','ListTicket', '?solvedBy={{ user.id }}')">
+						<span class="tree-icon tree-file icon-tip"></span> <span
+							class="tree-title">My Resolution</span>
+					</div>
+					{% endif %}
+					{% if user.get_position == "User" %}
+					<div id="menu5" class="tree-node" style="padding: 5px;"
+						onclick="addTab('Waiting for Close','icon-ok','ListTicket', '?status=Fixed')">
+						<span class="tree-icon tree-file icon-ok"></span> <span
+							class="tree-title">Waiting for Close</span>
+					</div>
+					{% endif %}
+					<div id="menu6" class="tree-node" style="padding: 5px;"
+						onclick="openNewtab('ReportClosed')">
+						<span class="tree-icon tree-file icon-print"></span> <span
+							class="tree-title">Report Closed Ticket</span>
+					</div>
+				</ul>
+			</div>
+			{% if user.get_position == "Superadmin" %}
+				<div title="Admin Area" style="overflow: auto; padding: 5px;"
+					data-options="iconCls:'icon-gears'">
+					<ul class="easyui-tree">
+						<div id="menu3" class="tree-node" style="padding: 5px;"
+							onclick="addTab('User','icon-users','User')">
+							<span class="tree-icon tree-file icon-users"></span> <span
+								class="tree-title">User</span>
+						</div>
+					</ul>
+				</div>
+			{% endif %}
+		</div>
+	</div>
+	<div data-options="region:'center'"
+		style="padding: 5px; background: #eee;">
+		<div class="easyui-tabs" id="tt">
+			<div title="News" style="padding: 10px;">
+				Ini adalah aplikasi Helpdesk untuk melalukan monitoring terhadap masalah-masalah internal yang dihadapi lingkungan sekolah. <br/>
+				Masalah-masalah akan di kelola dengan semaksimal mungkin menggunakan sumber daya yang ada.
+				<br/><br/>
+				Terima kasih.<br/>
+				Pengurus Sekolah.<br/>
+			</div>
+		</div>
+	</div>
+
+	<div data-options="region:'south',split:true" style="height: 40px;">
+		<span
+			style="float: right; font-size: 15px; margin-right: 10px;">
+			Copyright @2014
+		</span>
+	</div>
+</body>
+</html>

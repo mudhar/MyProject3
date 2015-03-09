@@ -1,0 +1,41 @@
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'Styles/themes/default/easyui.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'Styles/themes/icon.css' %}">
+<script type="text/javascript" src="{% static 'Scripts/jquery.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'Scripts/jquery.easyui.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'Scripts/jquery.cookie.js' %}"></script>
+<script type="text/javascript" src="{% static 'Scripts/datagrid-detailview.js' %}"></script>
+
+
+<style type="text/css">
+	label { display: block; text-align: left; line-height: 150%; font-size: .85em; }
+	.ftitle { font-size: 14px; font-weight: bold; padding: 5px 0; margin-bottom: 10px; border-bottom: 1px solid #ccc; }
+	.detail_grid tr { height: 18px; }
+	.detail_grid td { height: 18px; font-size: 12px; border:0; padding:0px !important; }
+</style>
+
+<table id="dgHistory" title="TicketsHistory" style="width: 1200px; height: auto; top: 100px;" rownumbers="true" fitColumns="true" singleSelect="true">
+</table>
+<!--a href="{% url 'Index1' %}Static/Upload/images.png" target="_blank">images.png</a -->
+{% csrf_token %}
+
+<script type="text/javascript">
+	function formatEncode(val,row){
+		return decodeURIComponent(encodeURIComponent(val))
+	}
+
+	$('#dgHistory').datagrid({
+		url : '{% url "List_Ticket_History_Data_ORI" %}',
+		queryParams: {
+			ticketId : {{ ticketId }},
+			csrfmiddlewaretoken: '{{ csrf_token }}',
+		},  
+		type : 'POST',
+		pagination: true,
+		columns : [ [
+			{field:'status',title:'Status',width:100,align:'center',sortable:true},
+			{field:'historyDateTime',title:'Date',width:120,align:'center',sortable:true},
+			{field:'desc',title:'Description',width:700,align:'left',sortable:true, formatter:formatEncode}
+		] ]
+	});
+</script>

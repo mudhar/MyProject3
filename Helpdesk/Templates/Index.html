@@ -1,0 +1,10 @@
+{% extends "Layout.html" %}
+
+{% block title %} {{ BASE_DIR }} {% endblock %}
+
+{% block content %}
+{% for entry in output %}
+    <h2>{{ entry.UserName }} </h2>
+    <p>{{ entry.Email }}</p>
+{% endfor %}
+{% endblock %}

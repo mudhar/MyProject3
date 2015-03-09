@@ -1,0 +1,62 @@
+{% load static %}
+<link rel="stylesheet" type="text/css"
+	href="{% static 'Styles/themes/default/easyui.css' %}">
+<link rel="stylesheet" type="text/css"
+	href="{% static 'Styles/themes/icon.css' %}">
+<script type="text/javascript"
+	src="{% static 'Scripts/jquery.min.js' %}"></script>
+<script type="text/javascript"
+	src="{% static 'Scripts/jquery.easyui.min.js' %}"></script>
+<script type="text/javascript"
+	src="{% static 'Scripts/jquery.cookie.js' %}"></script>
+
+
+<script type="text/javascript">
+	$(function submit() {
+		$('#input-form').form({
+			url : '',
+			onSubmit : function() {
+				return $(this).form('validate');				
+			},
+			success : function(data) {
+				dataJson = $.parseJSON(data);
+				if (dataJson.success == true) {
+					alert("Success");
+					if(dataJson.number)
+						$('#id_ticketNo').val(dataJson.number);
+					$('#btn_submit').linkbutton('disable');
+				} else {
+					alert(dataJson.message);
+				}
+			}
+		});
+	});
+	
+	function submit(){
+		$("#input-form").submit();
+	}
+</script>
+
+<style type="text/css">
+label {
+	display: block;
+	text-align: left;
+	line-height: 150%;
+	font-size: .85em;
+}
+label {
+	font-weight: normal;
+}
+</style>
+
+<form id="input-form" action="" method="post"  enctype="multipart/form-data">
+	{% csrf_token %}
+	<table>
+		{{ form }}
+	</table>
+	<br/>
+	<div id="dlg-buttons">
+	<!--input type="submit" id="btn_submit" value="Submit" style="width: 90px" class="easyui-linkbutton c6" iconCls="icon-ok"/ -->
+	<a href="javascript:void(0)" id="btn_submit" class="easyui-linkbutton c6" onclick="submit()" iconCls="icon-ok" style="width: 90px">Submit</a>
+	</div>
+</form>

@@ -1,0 +1,197 @@
+{% load static %}
+<link rel="stylesheet" type="text/css"
+	href="{% static 'Styles/themes/default/easyui.css' %}">
+<link rel="stylesheet" type="text/css"
+	href="{% static 'Styles/themes/icon.css' %}">
+<script type="text/javascript"
+	src="{% static 'Scripts/jquery.min.js' %}"></script>
+<script type="text/javascript"
+	src="{% static 'Scripts/jquery.easyui.min.js' %}"></script>
+<script type="text/javascript"
+	src="{% static 'Scripts/jquery.cookie.js' %}"></script>
+
+<table id="dg" title="Users"
+	style="width: auto; height: auto; top: 100px;" rownumbers="true"
+	fitColumns="true" singleSelect="true">
+</table>
+{% csrf_token %}
+
+<div id="toolbar">
+	<a href="#" class="easyui-linkbutton" iconCls="icon-add" plain="true"
+		onclick="newUser()">New User</a> <a href="#" class="easyui-linkbutton"
+		iconCls="icon-edit" plain="true" onclick="editUser()">Edit User</a> <a
+		href="#" class="easyui-linkbutton" iconCls="icon-remove" plain="true"
+		onclick="destroyUser()">Remove User</a><a href="#"
+		class="easyui-linkbutton" iconCls="icon-search" plain="true"
+		onclick="searchUser()">Search User</a>
+</div>
+
+<script type="text/javascript">
+	var csrftoken = $.cookie('csrftoken');
+	function csrfSafeMethod(method) {
+	    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+	}
+	$.ajaxSetup({
+		beforeSend: function(xhr, settings) {
+			if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+				xhr.setRequestHeader("X-CSRFToken", csrftoken);
+			}
+		}
+	});
+	$('#dg').datagrid({
+	    queryParams: {
+	    },        
+		url : '{{ url }}',
+		type : 'POST',
+		toolbar : '#toolbar',
+		pagination: true,
+		columns : [ [
+		{% for field in form %}              
+			{
+				{% for key, value in field_name.items %}
+					{% if key == field %}
+						field : '{{ field }}',
+						title : '{{ value }}',
+						hidden : (('{{ field }}' == 'id') || ('{{ field }}' == 'password') || ('{{ field }}' == 'last_login')) ? true : false,
+						width : 200
+					{% endif %}	
+				{% endfor %}
+			},
+		{% endfor %}
+		] ]
+	});
+</script>
+
+<style type="text/css">
+label {
+	display: block;
+	text-align: left;
+	line-height: 150%;
+	font-size: .85em;
+}
+
+.ftitle {
+	font-size: 14px;
+	font-weight: bold;
+	padding: 5px 0;
+	margin-bottom: 10px;
+	border-bottom: 1px solid #ccc;
+}
+</style>
+
+<div id="dlg" class="easyui-dialog"
+	style="width: auto; height: auto; padding: 10px 20px;" closed="true"
+	buttons="#dlg-buttons">
+	<div class="ftitle">User Information</div>
+	<form id="fm" method="post" novalidate>
+		<table>{{ Dialog }}
+		</table>
+	</form>
+</div>
+<div id="dlg-buttons">
+	<a href="javascript:void(0)" class="easyui-linkbutton c6"
+		iconCls="icon-ok" onclick="saveUser()" style="width: 90px">Save</a>
+		<a href="javascript:void(0)" class="easyui-linkbutton"
+		iconCls="icon-cancel" onclick="javascript:$('#dlg').dialog('close')"
+		style="width: 90px">Cancel</a>
+</div>
+
+<div id="dlgSearch" class="easyui-dialog"
+	style="width: auto; height: auto; padding: 10px 20px;" closed="true"
+	buttons="#dlg-buttons">
+	<div class="ftitle">User Search</div>
+	<form id="fmSearch" method="post" novalidate>
+		<table>{{ DialogSearch }}
+		</table>
+	</form>
+</div>
+<div id="dlg-buttons">
+	<a href="javascript:void(0)" class="easyui-linkbutton c6"
+		iconCls="icon-ok" onclick="getUserList()" style="width: 90px">Search</a>
+	<a href="javascript:void(0)" class="easyui-linkbutton"
+		iconCls="icon-cancel" onclick="resetSearch()" style="width: 90px">Reset</a>
+</div>
+
+<script type="text/javascript">
+	var url;
+	function newUser(){
+		$('#dlg').dialog('open').dialog('setTitle','New User');
+		$('#fm').form('clear');
+		$("#id_username").removeAttr('readonly');
+		url = 'User';
+	}
+	function searchUser(){
+		$('#dlgSearch').dialog('open').dialog('setTitle','Search User');
+		//$('#fmSearch').form('clear');
+		url = 'User';
+	}
+	function resetSearch(){
+		$('#fmSearch').form('clear');
+		url = 'User';
+		getUserList()
+	}
+	function editUser(){
+		var row = $('#dg').datagrid('getSelected');
+		if (row){
+			$('#dlg').dialog('open').dialog('setTitle','Edit User');
+			$('#fm').form('load',row);
+			$("#id_username").attr('readonly','readonly');
+			url = 'User';
+		}
+	}
+	function saveUser(){
+		$('#fm').form('submit',{
+			url: url,
+			type : 'POST',
+			onSubmit: function(){
+				return $(this).form('validate');
+			},
+			queryParams: {
+				csrfmiddlewaretoken: '{{ csrf_token }}',
+	        },
+			success: function(data){
+				dataJson = jQuery.parseJSON(data);
+				if (dataJson.success == true){
+					$('#dlg').dialog('close');		// close the dialog
+					$('#dg').datagrid('reload');
+					
+				} else {
+					$.messager.show({
+						title: 'Error',
+						msg: dataJson.message
+					});
+				}
+			}
+		});
+	}
+	function destroyUser(){
+		var row = $('#dg').datagrid('getSelected');
+		if (row){
+			$.messager.confirm('Confirm','Are you sure you want to destroy this user?',function(r){
+				if (r){
+					$.post('User',{username:row.username,status:'delete'},function(dataJson){
+						if (dataJson.success == true){
+							$('#dg').datagrid('reload');	// reload the user data
+						} else {
+							$.messager.show({	// show error message
+								title: 'Error',
+								msg: dataJson.message
+							});
+						}
+					},'json');
+				}
+			});
+		}
+	}
+	function getUserList(){
+		$('#dg').datagrid('load',{
+			username: $('#fmSearch').find('input[name="username"]').val(),
+		    name: $('#fmSearch').find('input[name="name"]').val(),
+		    telpNo: $('#fmSearch').find('input[name="telpNo"]').val(),
+		    address: $('#fmSearch').find('input[name="address"]').val(),
+		    gender: $('#fmSearch').find('select[name="gender"]').val(),
+		    email: $('#fmSearch').find('input[name="email"]').val(),
+		 	position: $('#fmSearch').find('select[name="position"]').val()
+		});
+	}
+</script>
